@@ -20,7 +20,7 @@ header_names = [
     'sqft_basement',
     'yr_built',
     'yr_renovated',
-    'zipcode',
+    # 'zipcode',
     'lat',
     'long',
     'sqft_living15',
@@ -34,6 +34,7 @@ original_column_count = 21
 ID_INDEX = 0
 DATE_INDEX = 1
 PRICE_INDEX = 2
+ZIP_CODE_INDEX = 16
 
 
 def inverse_svd(u, s, vh):
@@ -94,7 +95,7 @@ def read_data(lines):
         k = 0
         for i in range(original_column_count):
             value = row[i]
-            if i == ID_INDEX:  # skip id
+            if i == ID_INDEX or i == ZIP_CODE_INDEX:  # skip
                 continue
             elif i == PRICE_INDEX:  # price is result not data
                 prices[row_index] = float(value)

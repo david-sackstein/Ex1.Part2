@@ -7,42 +7,44 @@ from matplotlib.pyplot import *
 import scipy.misc as misc
 
 
-def read_rows(row_count):
+def read_data(lines, row_count):
     headers = {}
-    matrix = None
+    data = None
     row_index = 0
-    for line_index, line in enumerate(lines):
+    for line in lines:
         values = line.split(',')
         if not headers:
             for i, value in enumerate(values):
                 headers[value] = i
-            matrix = ndarray((row_count, len(headers)))
+            data = ndarray((row_count, len(headers)))
         else:
             if len(values) == len(headers):
                 for i in range(0, len(values)):
-                    matrix[row_index, i] = float(values[i].strip('\"')[:4])
+                    data[row_index, i] = float(values[i].strip('\"')[:4])
                 row_index += 1
-                if row_index == row_count :
-                    break
-    return headers, matrix
+            if row_index == row_count:
+                break
+    return headers, data
 
 
-if __name__=='__main__':
-    file_name = 'kc_house_data.csv'
-
+def run(file_name):
     try:
         with open(file_name) as file_:
             lines = file_.readlines()
     except:
         print('Failed to open ' + file_name)
 
-    headers, matrix = read_rows(100)
+    headers, data = read_data(lines, 100)
 
-    for row in range(len(matrix)):
-        print(matrix[row, headers['lat']])
+    for row in range(len(data)):
+        print(data[row, headers['lat']])
 
-    decomposed = svd(matrix)
+    decomposed = svd(data)
     u, s, vh = decomposed
-    t = u[:, :matrix.shape[1]]
-    ok = np.allclose(matrix, np.dot(t * s, vh))
+    t = u[:, :data.shape[1]]
+    ok = np.allclose(data, np.dot(t * s, vh))
     print(ok)
+
+
+if __name__=='__main__':
+    run('kc_house_data.csv')

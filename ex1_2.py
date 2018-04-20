@@ -3,7 +3,7 @@ import os
 from numpy.core.multiarray import ndarray
 from numpy.linalg import svd, norm, eig
 from matplotlib.pyplot import *
-from scipy import stats
+from scipy import stats, random
 
 header_names = [
     'year',
@@ -36,10 +36,10 @@ original_column_count = 21
 ID_INDEX = 0
 DATE_INDEX = 1
 PRICE_INDEX = 2
-MINIMUM_PRICE = 1000
+
 
 def inverse_svd(u, s, vh):
-    u = u[:, :vh.shape[0]]
+    u = u[:, :vh.shape[1]]
     return np.dot(u * s, vh)
 
 
@@ -61,29 +61,44 @@ def calc_linear_predictor(data, prices):
     u, s, vh = svd(data)
     s_sword = calc_sword(s)
     inverse = inverse_svd(u, s_sword, vh)
-    predictor = np.dot(np.transpose(inverse), prices)
-    return predictor
+    return np.dot(np.transpose(inverse), prices)
 
 
 def _parse_date(value):
-    date_value = value[0:8]
-    year = int(date_value[0:4])
-    month = int(date_value[4:6])
-    day = int(date_value[6:8])
-    return year, month, day
+    try:
+        date_value = value[0:8]
+        year = int(date_value[0:4])
+        month = int(date_value[4:6])
+        day = int(date_value[6:8])
+        return year, month, day
+    except:
+        return None
 
 
-def read_data(lines, row_count):
-    data = ndarray((row_count, column_count))
-    prices = ndarray((row_count,))
-    row_index = 0
+def get_valid_rows(lines):
     for line in lines:
         values = line.split(',')
         if len(values) != original_column_count:
             continue
+        if not values[DATE_INDEX]:
+            continue
+        if len(values[DATE_INDEX]) < 8:
+            continue
+        yield [v.strip('\"') for v in values]
+
+
+def read_data(lines):
+
+    valid_rows = list(get_valid_rows(lines))
+    row_count = len(valid_rows)
+
+    data = ndarray((row_count, column_count))
+    prices = ndarray((row_count,))
+
+    for row_index, row in enumerate(valid_rows):
         k = 0
         for i in range(original_column_count):
-            value = values[i].strip('\"')
+            value = row[i]
             if i == ID_INDEX:  # skip id
                 continue
             elif i == PRICE_INDEX:  # price is result not data
@@ -100,9 +115,6 @@ def read_data(lines, row_count):
             else:
                 data[row_index, k] = float(value)
                 k = k + 1
-        row_index += 1
-        if row_index == row_count:
-            break
     return data, prices
 
 
@@ -118,16 +130,33 @@ def run(file_name):
     with open(file_name) as file_:
         lines = file_.readlines()
 
-    data, prices = read_data(lines[1:], 100)
-    predictor = calc_linear_predictor(data, prices)
-    new_prices = np.dot(data, predictor)
-    rmse = calc_rmse(new_prices, prices)
-    print(rmse)
+    data, prices = read_data(lines[1:])
+    indexes = set(range(len(data)))
+    
+    for train_percent in range(10, 80):
+
+        train_size = int(train_percent * data.shape[0] / 100)
+        # TODO make this a random selection of indexes
+        train_indexes = range(0, train_size)
+        train_data = [v for i, v in enumerate(data) if i in train_indexes]
+        train_prices = [v for i, v in enumerate(prices) if i in train_indexes]
+
+        predictor = calc_linear_predictor(train_data, train_prices)
+
+        test_indexes = sorted(indexes - set(train_indexes))
+        test_data = [v for i, v in enumerate(data) if i in test_indexes]
+        test_prices = [v for i, v in enumerate(prices) if i in test_indexes]
+
+        new_prices = np.dot(test_data, predictor)
+        rmse = calc_rmse(new_prices, test_prices)
+
+        print(rmse)
 
 
 if __name__ == '__main__':
     data_file_name = 'kc_house_data.csv'
     run(data_file_name)
+
 
 # ======================================================
 
@@ -138,11 +167,10 @@ def tests(data):
     ok = np.allclose(data, reconstructed)
     print(ok)
 
+
 def print_data_and_prices(data, prices):
     for row in range(len(data)):
         message = ''
         for header_name in header_names:
             message += '{} = {} '.format(header_name, data[row, headers[header_name]])
         print(message, 'prices = ', prices[row])
-
-

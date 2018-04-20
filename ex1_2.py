@@ -1,9 +1,7 @@
-import os
-
 from numpy.core.multiarray import ndarray
 from numpy.linalg import svd, norm, eig
 from matplotlib.pyplot import *
-from scipy import stats, random
+from scipy import stats, random, math
 
 header_names = [
     'year',
@@ -65,14 +63,11 @@ def calc_linear_predictor(data, prices):
 
 
 def _parse_date(value):
-    try:
-        date_value = value[0:8]
-        year = int(date_value[0:4])
-        month = int(date_value[4:6])
-        day = int(date_value[6:8])
-        return year, month, day
-    except:
-        return None
+    date_value = value[0:8]
+    year = int(date_value[0:4])
+    month = int(date_value[4:6])
+    day = int(date_value[6:8])
+    return year, month, day
 
 
 def get_valid_rows(lines):
@@ -119,7 +114,7 @@ def read_data(lines):
 
 
 def calc_rmse(lhs, rhs):
-    differences = lhs - rhs
+    differences = np.asarray([float(d) for d in lhs - rhs if not math.isnan(d)])
     differences_squared = differences ** 2
     mean_of_differences_squared = differences_squared.mean()
     rmse = np.sqrt(mean_of_differences_squared)
@@ -133,7 +128,7 @@ def run(file_name):
     data, prices = read_data(lines[1:])
     indexes = set(range(len(data)))
     
-    for train_percent in range(1, 99):
+    for train_percent in range(10, 95, 10):
 
         train_size = int(train_percent * data.shape[0] / 100)
         # TODO make this a random selection of indexes

@@ -43,8 +43,8 @@ def inverse_svd(u, s, vh):
 
 
 def calc_sword(sigma):
-    threshold = stats.gmean(sigma) / 100
-    rank = 0
+    threshold = 0 # stats.gmean(sigma) / 100
+    rank = len(sigma)
     sigma_sword = ndarray(sigma.shape)
     for i in range(len(sigma)):
         if sigma[i] > threshold:
@@ -150,8 +150,23 @@ def run(file_name):
 
 
 if __name__ == '__main__':
-    data_file_name = 'kc_house_data.csv'
-    run(data_file_name)
+
+    data = [[1, 1, 0], [2, 4, 6], [1, 2, 3]]
+    prices = [1, 5, 3]
+
+    predictor = calc_linear_predictor(data, prices)
+    # print(predictor)
+    # predictor = [1, 1, 1]
+
+    new_prices = np.dot(data, predictor)
+
+    print(new_prices)
+    rmse = calc_rmse(new_prices, prices)
+
+    print(rmse)
+
+    # data_file_name = 'kc_house_data.csv'
+    # run(data_file_name)
 
 
 # ======================================================

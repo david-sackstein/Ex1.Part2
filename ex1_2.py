@@ -133,7 +133,7 @@ def run(file_name):
     data, prices = read_data(lines[1:])
     indexes = set(range(len(data)))
     
-    for train_percent in range(10, 80):
+    for train_percent in range(1, 99):
 
         train_size = int(train_percent * data.shape[0] / 100)
         # TODO make this a random selection of indexes

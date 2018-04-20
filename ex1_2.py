@@ -1,10 +1,8 @@
 import os
 
-import numpy
 from numpy.core.multiarray import ndarray
 from numpy.linalg import svd, norm, eig
 from matplotlib.pyplot import *
-import scipy.misc as misc
 from scipy import stats
 
 header_names = [
@@ -40,6 +38,41 @@ DATE_INDEX = 1
 PRICE_INDEX = 2
 MINIMUM_PRICE = 1000
 
+def inverse_svd(u, s, vh):
+    u = u[:, :vh.shape[0]]
+    return np.dot(u * s, vh)
+
+
+def calc_sword(sigma):
+    threshold = stats.gmean(sigma) / 100
+    rank = 0
+    sigma_sword = ndarray(sigma.shape)
+    for i in range(len(sigma)):
+        if sigma[i] > threshold:
+            sigma_sword[i] = 1 / sigma[i]
+        else:
+            rank = i
+            break
+    sigma_sword[rank:] = 0
+    return sigma_sword
+
+
+def calc_linear_predictor(data, prices):
+    u, s, vh = svd(data)
+    s_sword = calc_sword(s)
+    inverse = inverse_svd(u, s_sword, vh)
+    predictor = np.dot(np.transpose(inverse), prices)
+    return predictor
+
+
+def _parse_date(value):
+    date_value = value[0:8]
+    year = int(date_value[0:4])
+    month = int(date_value[4:6])
+    day = int(date_value[6:8])
+    return year, month, day
+
+
 def read_data(lines, row_count):
     data = ndarray((row_count, column_count))
     prices = ndarray((row_count,))
@@ -73,17 +106,12 @@ def read_data(lines, row_count):
     return data, prices
 
 
-def _parse_date(value):
-    date_value = value[0:8]
-    year = int(date_value[0:4])
-    month = int(date_value[4:6])
-    day = int(date_value[6:8])
-    return year, month, day
-
-
-def inverse_svd(u, s, vh):
-    u = u[:, :vh.shape[0]]
-    return np.dot(u * s, vh)
+def calc_rmse(lhs, rhs):
+    differences = lhs - rhs
+    differences_squared = differences ** 2
+    mean_of_differences_squared = differences_squared.mean()
+    rmse = np.sqrt(mean_of_differences_squared)
+    return rmse
 
 
 def run(file_name):
@@ -96,34 +124,12 @@ def run(file_name):
     rmse = calc_rmse(new_prices, prices)
     print(rmse)
 
-def calc_rmse(lhs, rhs):
-    differences = lhs - rhs
-    differences_squared = differences ** 2
-    mean_of_differences_squared = differences_squared.mean()
-    rmse = np.sqrt(mean_of_differences_squared)
-    return rmse
 
-def calc_linear_predictor(data, prices):
-    u, s, vh = svd(data)
-    s_sword = calc_sword(s)
-    inverse = inverse_svd(u, s_sword, vh)
-    predictor = np.dot(np.transpose(inverse), prices)
-    return predictor
+if __name__ == '__main__':
+    data_file_name = 'kc_house_data.csv'
+    run(data_file_name)
 
-
-def calc_sword(sigma):
-    threshold = stats.gmean(sigma) / 100
-    rank = 0
-    sigma_sword = ndarray(sigma.shape)
-    for i in range(len(sigma)):
-        if sigma[i] > threshold:
-            sigma_sword[i] = 1 / sigma[i]
-        else:
-            rank = i
-            break
-    sigma_sword[rank:] = 0
-    return sigma_sword
-
+# ======================================================
 
 def tests(data):
     decomposed = svd(data)
@@ -131,13 +137,6 @@ def tests(data):
     reconstructed = inverse_svd(u, s, vh)
     ok = np.allclose(data, reconstructed)
     print(ok)
-    f = np.transpose(data)
-    a = np.dot(data, np.transpose(data))
-    w, v = eig(a)
-    reconstructed = numpy.dot(v * w, np.transpose(v))
-    ok = np.allclose(a, reconstructed)
-    print(ok)
-
 
 def print_data_and_prices(data, prices):
     for row in range(len(data)):
@@ -147,6 +146,3 @@ def print_data_and_prices(data, prices):
         print(message, 'prices = ', prices[row])
 
 
-if __name__ == '__main__':
-    data_file_name = 'kc_house_data.csv'
-    run(data_file_name)

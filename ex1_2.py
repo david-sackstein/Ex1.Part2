@@ -6,25 +6,64 @@ from numpy.linalg import svd, norm
 from matplotlib.pyplot import *
 import scipy.misc as misc
 
+headers = {
+    'id': 0,
+    'year': 1, 'month': 2, 'day': 3,  # these replace 'date'
+    'price': 4,
+    'bedrooms': 5,
+    'bathrooms': 6,
+    'sqft_living': 7,
+    'sqft_lot': 8,
+    'floors': 9,
+    'waterfront': 10,
+    'view': 11,
+    'condition': 12,
+    'grade': 13,
+    'sqft_above': 14,
+    'sqft_basement': 15,
+    'yr_built': 16,
+    'yr_renovated': 17,
+    'zipcode': 18,
+    'lat': 19,
+    'long': 20,
+    'sqft_living15': 21,
+    'sqft_lot15': 22
+}
+
+header_count = len(headers)
+original_header_count = header_count - 2
+
 
 def read_data(lines, row_count):
-    headers = {}
-    data = None
+    data = ndarray((row_count, header_count))
     row_index = 0
-    for line in lines:
+    for line in lines[1:]:
         values = line.split(',')
-        if not headers:
-            for i, value in enumerate(values):
-                headers[value] = i
-            data = ndarray((row_count, len(headers)))
-        else:
-            if len(values) == len(headers):
-                for i in range(0, len(values)):
-                    data[row_index, i] = float(values[i].strip('\"')[:4])
-                row_index += 1
-            if row_index == row_count:
-                break
-    return headers, data
+        if len(values) != original_header_count:
+            continue
+        k = 0
+        for i in range(len(values)):
+            if i == 1:
+                year, month, day = _parse_date(values[i])
+                data[row_index, 1] = year
+                data[row_index, 2] = month
+                data[row_index, 3] = day
+                k = k + 3
+            else:
+                data[row_index, k] = float(values[i].strip('\"'))
+                k = k + 1
+        row_index += 1
+        if row_index == row_count:
+            break
+    return data
+
+
+def _parse_date(value):
+    date_value = value[1:9]
+    year = int(date_value[0:4])
+    month = int(date_value[4:6])
+    day = int(date_value[6:8])
+    return year, month, day
 
 
 def run(file_name):
@@ -34,7 +73,7 @@ def run(file_name):
     except:
         print('Failed to open ' + file_name)
 
-    headers, data = read_data(lines, 100)
+    data = read_data(lines, 100)
 
     for row in range(len(data)):
         print(data[row, headers['lat']])
@@ -46,5 +85,5 @@ def run(file_name):
     print(ok)
 
 
-if __name__=='__main__':
+if __name__ == '__main__':
     run('kc_house_data.csv')

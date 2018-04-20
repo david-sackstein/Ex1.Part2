@@ -1,0 +1,274 @@
+{
+ "cells": [
+  {
+   "cell_type": "code",
+   "execution_count": 2,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "import numpy as np\n",
+    "import matplotlib.pyplot as plt"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 52,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# The data X: consist of 6 people with 4 features. Note the intercept - the first row\n",
+    "d=5 # Number of features\n",
+    "m=3  # number of samples\n",
+    "X= np.array( [[1,2,0,0,0],\n",
+    "     [1,3,1,1,0],\n",
+    "     [0,0,0,1,0],\n",
+    "     [1,1,1,1,1]])  \n",
+    "w=np.array([[1],[2],[1],[0]])  # NOTE: this is the unkown w we are trying to recover!\n",
+    "Y = X.transpose().dot(w)\n",
+    "del w\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 53,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "(4, 5)"
+      ]
+     },
+     "execution_count": 53,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "X.shape"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 130,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "array([[ 5,  7,  0,  3],\n",
+       "       [ 7, 12,  1,  6],\n",
+       "       [ 0,  1,  1,  1],\n",
+       "       [ 3,  6,  1,  5]])"
+      ]
+     },
+     "execution_count": 130,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "X.dot(X.transpose()) # X*X^T  is always sqaure symmetric"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 57,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "XX = np.linalg.inv(X.dot(X.transpose())).dot(X)  #XX = (X*X^T)^-1 * X^T"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 58,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "array([[1.0000000e+00],\n",
+       "       [2.0000000e+00],\n",
+       "       [1.0000000e+00],\n",
+       "       [8.8817842e-16]])"
+      ]
+     },
+     "execution_count": 58,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "XX.dot(Y)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 126,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "## Now, what if X is not inversible?"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 131,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "U, S, VT = np.linalg.svd(X.transpose(),full_matrices=False)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 132,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "UT=U.transpose()\n",
+    "ST=1/S\n",
+    "V=VT.transpose()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 133,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "((5, 4), (4,), (4, 4))"
+      ]
+     },
+     "execution_count": 133,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "U.shape, S.shape, VT.shape"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 135,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "array([[-7.77156117e-16, -2.22044605e-15, -6.28973666e-16,\n",
+       "        -5.55111512e-16],\n",
+       "       [-1.33226763e-15, -2.22044605e-15,  2.83864612e-16,\n",
+       "        -8.88178420e-16],\n",
+       "       [ 7.11599036e-17, -2.22044605e-16,  1.12583101e-16,\n",
+       "        -3.33066907e-16],\n",
+       "       [-1.78545901e-17, -2.22044605e-16,  0.00000000e+00,\n",
+       "        -6.66133815e-16],\n",
+       "       [-1.45203251e-17, -1.24455271e-16, -2.08616722e-16,\n",
+       "        -1.11022302e-16]])"
+      ]
+     },
+     "execution_count": 135,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "U.dot(np.diag(S).dot(VT))-X.transpose() # Reconstrauct X.transpose() from SVD"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 136,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "X_pseudo_inv = V.dot(np.diag(1/S).dot(UT))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 140,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "array([[ 1.00000000e+00,  6.53130254e-16,  2.09041044e-16,\n",
+       "        -1.66533454e-16],\n",
+       "       [-1.11022302e-16,  1.00000000e+00, -3.12783660e-16,\n",
+       "        -1.66533454e-16],\n",
+       "       [-1.66533454e-16,  3.33066907e-16,  1.00000000e+00,\n",
+       "         5.27355937e-16],\n",
+       "       [-1.66533454e-16,  1.59777328e-16,  6.59377689e-16,\n",
+       "         1.00000000e+00]])"
+      ]
+     },
+     "execution_count": 140,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "X_pseudo_inv.dot(X.transpose()) # validate identity matrix"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 141,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "w2 = X_pseudo_inv.dot(Y)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 143,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "array([[1.00000000e+00],\n",
+       "       [2.00000000e+00],\n",
+       "       [1.00000000e+00],\n",
+       "       [6.66133815e-16]])"
+      ]
+     },
+     "execution_count": 143,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "w2"
+   ]
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.6.4"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 2
+}

@@ -38,12 +38,11 @@ ZIP_CODE_INDEX = 16
 
 
 def inverse_svd(u, s, vh):
-    u = u[:, :vh.shape[1]]
     return np.dot(u * s, vh)
 
 
 def calc_sword(sigma):
-    threshold = 0 # stats.gmean(sigma) / 100
+    threshold = stats.gmean(sigma) / 100
     rank = len(sigma)
     sigma_sword = ndarray(sigma.shape)
     for i in range(len(sigma)):
@@ -53,11 +52,12 @@ def calc_sword(sigma):
             rank = i
             break
     sigma_sword[rank:] = 0
+
     return sigma_sword
 
 
 def calc_linear_predictor(data, prices):
-    u, s, vh = svd(data)
+    u, s, vh = svd(data, False)
     s_sword = calc_sword(s)
     inverse = inverse_svd(u, s_sword, vh)
     return np.dot(np.transpose(inverse), prices)
@@ -71,16 +71,29 @@ def _parse_date(value):
     return year, month, day
 
 
+def is_float(value):
+    try:
+        return not math.isnan(float(value))
+    except ValueError:
+        return False
+
+
+def is_valid(values):
+    if len(values) != original_column_count:
+        return False
+    if not values[DATE_INDEX]:
+        return False
+    if len(values[DATE_INDEX]) < 8:
+        return False
+    if not is_float(values[PRICE_INDEX]):
+        return False
+    return True
+
 def get_valid_rows(lines):
     for line in lines:
         values = line.split(',')
-        if len(values) != original_column_count:
-            continue
-        if not values[DATE_INDEX]:
-            continue
-        if len(values[DATE_INDEX]) < 8:
-            continue
-        yield [v.strip('\"') for v in values]
+        if is_valid(values):
+            yield [v.strip('\"') for v in values]
 
 
 def read_data(lines):
@@ -115,7 +128,7 @@ def read_data(lines):
 
 
 def calc_rmse(lhs, rhs):
-    differences = np.asarray([float(d) for d in lhs - rhs if not math.isnan(d)])
+    differences = lhs - rhs
     differences_squared = differences ** 2
     mean_of_differences_squared = differences_squared.mean()
     rmse = np.sqrt(mean_of_differences_squared)
@@ -149,24 +162,24 @@ def run(file_name):
         print(rmse)
 
 
-if __name__ == '__main__':
-
+def test_predictor():
     data = [[1, 1, 0], [2, 4, 6], [1, 2, 3]]
     prices = [1, 5, 3]
-
     predictor = calc_linear_predictor(data, prices)
-    # print(predictor)
+    print(predictor)
     # predictor = [1, 1, 1]
-
     new_prices = np.dot(data, predictor)
-
     print(new_prices)
     rmse = calc_rmse(new_prices, prices)
-
     print(rmse)
 
-    # data_file_name = 'kc_house_data.csv'
-    # run(data_file_name)
+
+if __name__ == '__main__':
+
+    # test_predictor()
+
+    data_file_name = 'kc_house_data.csv'
+    run(data_file_name)
 
 
 # ======================================================

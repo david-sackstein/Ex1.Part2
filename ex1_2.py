@@ -3,6 +3,17 @@ from numpy.linalg import svd, norm, eig
 from matplotlib.pyplot import *
 from scipy import stats, random, math
 
+zip_codes_values = [
+    98001, 98002, 98003, 98004, 98005, 98006, 98007, 98008, 98010, 98011,
+    98014, 98019, 98022, 98023, 98024, 98027, 98028, 98029, 98030, 98031,
+    98032, 98033, 98034, 98038, 98039, 98040, 98042, 98045, 98052, 98053,
+    98055, 98056, 98058, 98059, 98065, 98070, 98072, 98074, 98075, 98077,
+    98092, 98102, 98103, 98105, 98106, 98107, 98108, 98109, 98112, 98115,
+    98116, 98117, 98118, 98119, 98122, 98125, 98126, 98133, 98136, 98144,
+    98146, 98148, 98155, 98166, 98168, 98177, 98178, 98188, 98198, 98199
+]
+zip_codes = {value: index for (index, value) in enumerate(zip_codes_values)}
+
 header_names = [
     'year',
     'month',
@@ -20,14 +31,16 @@ header_names = [
     'sqft_basement',
     'yr_built',
     'yr_renovated',
-    # 'zipcode',
     'lat',
     'long',
     'sqft_living15',
     'sqft_lot15'
 ]
 
+zip_code_header_names = ['zip_{}'.format(z) for z in zip_codes_values]
+header_names = header_names[:16] + zip_code_header_names + header_names[16:]
 headers = {name: index for (index, name) in enumerate(header_names)}
+
 column_count = len(headers)
 original_column_count = 21
 
@@ -89,6 +102,7 @@ def is_valid(values):
         return False
     return True
 
+
 def get_valid_rows(lines):
     for line in lines:
         values = line.split(',')
@@ -97,7 +111,6 @@ def get_valid_rows(lines):
 
 
 def read_data(lines):
-
     valid_rows = list(get_valid_rows(lines))
     row_count = len(valid_rows)
 
@@ -108,12 +121,12 @@ def read_data(lines):
         k = 0
         for i in range(original_column_count):
             value = row[i]
-            if i == ID_INDEX or i == ZIP_CODE_INDEX:  # skip
+            if i == ID_INDEX:  # skip
                 continue
             elif i == PRICE_INDEX:  # price is result not data
                 prices[row_index] = float(value)
                 continue
-            if i == DATE_INDEX:
+            elif i == DATE_INDEX:
                 year, month, day = _parse_date(value)
                 data[row_index, k] = year
                 k = k + 1
@@ -121,6 +134,12 @@ def read_data(lines):
                 k = k + 1
                 data[row_index, k] = day
                 k = k + 1
+            elif i == ZIP_CODE_INDEX:
+                prev_k = k
+                for j in range(len(zip_codes_values)):
+                    data[row_index, k] = 0
+                    k = k + 1
+                data[row_index, prev_k + zip_codes[int(value)]] = 1
             else:
                 data[row_index, k] = float(value)
                 k = k + 1
@@ -141,25 +160,33 @@ def run(file_name):
 
     data, prices = read_data(lines[1:])
     indexes = set(range(len(data)))
-    
-    for train_percent in range(10, 95, 10):
 
+    for train_percent in range(10, 95, 10):
         train_size = int(train_percent * data.shape[0] / 100)
-        # TODO make this a random selection of indexes
-        train_indexes = range(0, train_size)
-        train_data = [v for i, v in enumerate(data) if i in train_indexes]
-        train_prices = [v for i, v in enumerate(prices) if i in train_indexes]
+
+        train_indexes = get_random_selection(indexes, train_size)
+        test_indexes = sorted(indexes - set(train_indexes))
+
+        train_data, train_prices = get_data_and_prices(data, prices, train_indexes)
+        test_data, test_prices = get_data_and_prices(data, prices, test_indexes)
 
         predictor = calc_linear_predictor(train_data, train_prices)
 
-        test_indexes = sorted(indexes - set(train_indexes))
-        test_data = [v for i, v in enumerate(data) if i in test_indexes]
-        test_prices = [v for i, v in enumerate(prices) if i in test_indexes]
-
-        new_prices = np.dot(test_data, predictor)
-        rmse = calc_rmse(new_prices, test_prices)
+        predicted_prices = np.dot(test_data, predictor)
+        rmse = calc_rmse(predicted_prices, test_prices)
 
         print(rmse)
+
+
+def get_random_selection(indexes, train_size):
+    # TODO make this a random selection of indexes
+    return range(0, train_size)
+
+
+def get_data_and_prices(data, prices, indexes):
+    data = [v for i, v in enumerate(data) if i in indexes]
+    prices = [v for i, v in enumerate(prices) if i in indexes]
+    return data, prices
 
 
 def test_predictor():

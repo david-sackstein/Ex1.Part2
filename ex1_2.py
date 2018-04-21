@@ -1,3 +1,4 @@
+from matplotlib import patches
 from numpy.core.multiarray import ndarray
 from numpy.linalg import svd, norm, eig
 from matplotlib.pyplot import *
@@ -98,7 +99,10 @@ def is_valid(values):
         return False
     if len(values[DATE_INDEX]) < 8:
         return False
-    if not is_float(values[PRICE_INDEX]):
+    price = values[PRICE_INDEX]
+    if not is_float(price):
+        return False
+    if float(price) < 1:
         return False
     return True
 
@@ -161,7 +165,25 @@ def run(file_name):
     data, prices = read_data(lines[1:])
     indexes = set(range(len(data)))
 
-    for train_percent in range(10, 95, 10):
+    percents, test_errors, train_errors = get_percents_and_errors(data, indexes, prices)
+
+    test_error_line, = plot(percents, test_errors, linestyle='--', label='Test Error')
+    train_error_line, = plot(percents, train_errors, linestyle='--', label='Train Error')
+    legend(handles=[test_error_line, train_error_line])
+
+    ylabel('RMSE')
+    xlabel('[%]')
+    title('Test Error and Train Error [RMSE] as Functions of Training Set Size in %')
+    savefig('ErrorPlots.png')
+    clf()
+
+
+def get_percents_and_errors(data, indexes, prices):
+    percents = []
+    test_errors = []
+    train_errors = []
+
+    for train_percent in range(1, 100, 1):
         train_size = int(train_percent * data.shape[0] / 100)
 
         train_indexes = get_random_selection(indexes, train_size)
@@ -172,13 +194,28 @@ def run(file_name):
 
         predictor = calc_linear_predictor(train_data, train_prices)
 
-        predicted_prices = np.dot(test_data, predictor)
-        rmse = calc_rmse(predicted_prices, test_prices)
+        percents.append(train_percent)
+        # test error
+        test_error = _calculate_error_on_data(predictor, test_data, test_prices)
+        test_errors.append(test_error)
 
-        print(rmse)
+        # train error
+        train_error = _calculate_error_on_data(predictor, train_data, train_prices)
+        train_errors.append(train_error)
+
+        print(train_percent)
+
+    return percents, test_errors, train_errors
+
+def _calculate_error_on_data(predictor, data, prices):
+    predicted_prices = np.dot(data, predictor)
+    rmse = calc_rmse(predicted_prices, prices)
+    return rmse
 
 
 def get_random_selection(indexes, train_size):
+    # train_data = indexes.sample(frac=(i / 100))
+    # test_data = indexes.drop(train_data.index)
     # TODO make this a random selection of indexes
     return range(0, train_size)
 

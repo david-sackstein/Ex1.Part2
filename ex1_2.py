@@ -1,7 +1,7 @@
-from matplotlib import patches
 from numpy.core.multiarray import ndarray
 from numpy.linalg import svd, norm, eig
 from matplotlib.pyplot import *
+from numpy.random.mtrand import randint
 from scipy import stats, random, math
 
 zip_codes_values = [
@@ -49,6 +49,7 @@ ID_INDEX = 0
 DATE_INDEX = 1
 PRICE_INDEX = 2
 ZIP_CODE_INDEX = 16
+YEAR_RENOVATED_INDEX = 15
 
 
 def inverse_svd(u, s, vh):
@@ -125,7 +126,7 @@ def read_data(lines):
         k = 0
         for i in range(original_column_count):
             value = row[i]
-            if i == ID_INDEX:  # skip
+            if i == ID_INDEX or i == YEAR_RENOVATED_INDEX:  # skip
                 continue
             elif i == PRICE_INDEX:  # price is result not data
                 prices[row_index] = float(value)
@@ -163,7 +164,11 @@ def run(file_name):
         lines = file_.readlines()
 
     data, prices = read_data(lines[1:])
-    indexes = set(range(len(data)))
+
+    indexes = [0]*len(data)
+    for i in range(len(data)):
+        indexes[i] = i
+    # indexes = set(range(len(data)))
 
     percents, test_errors, train_errors = get_percents_and_errors(data, indexes, prices)
 
@@ -187,7 +192,8 @@ def get_percents_and_errors(data, indexes, prices):
         train_size = int(train_percent * data.shape[0] / 100)
 
         train_indexes = get_random_selection(indexes, train_size)
-        test_indexes = sorted(indexes - set(train_indexes))
+        test_indexes = np.subtract(indexes, train_indexes)
+        # test_indexes = sorted(indexes - set(train_indexes))
 
         train_data, train_prices = get_data_and_prices(data, prices, train_indexes)
         test_data, test_prices = get_data_and_prices(data, prices, test_indexes)
@@ -214,10 +220,14 @@ def _calculate_error_on_data(predictor, data, prices):
 
 
 def get_random_selection(indexes, train_size):
-    # train_data = indexes.sample(frac=(i / 100))
-    # test_data = indexes.drop(train_data.index)
     # TODO make this a random selection of indexes
-    return range(0, train_size)
+    train_indexes = [0]*21610
+    for i in range(train_size):
+        train_indexes[i] = randint(1, len(indexes))
+
+    for j in range(train_size, 21610):
+        train_indexes[j] = 0
+    return train_indexes
 
 
 def get_data_and_prices(data, prices, indexes):

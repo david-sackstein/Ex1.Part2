@@ -97,13 +97,17 @@ def is_float(value):
         return False
 
 
-def _is_positive(value):
+def _is_not_negative(value):
+    value = value.strip('\"')
     if not is_float(value):
         return False
-    if float(value) <= 0:
-        return False
-    return True
+    return float(value) >= 0
 
+def _is_positive(value):
+    value = value.strip('\"')
+    if not is_float(value):
+        return False
+    return float(value) > 0
 
 def is_valid(values):
     if len(values) != original_column_count:
@@ -112,15 +116,15 @@ def is_valid(values):
         return False
     if len(values[DATE_INDEX]) < 8:
         return False
-    if not _is_positive(PRICE_INDEX):
+    if not _is_positive(values[PRICE_INDEX]):
         return False
-    if not _is_positive(BEDROOMS_INDEX):
+    if not _is_positive(values[BEDROOMS_INDEX]):
         return False
-    if not _is_positive(BATHROOMS_INDEX):
+    if not _is_not_negative (values[BATHROOMS_INDEX]):
         return False
-    if not _is_positive(FLOORS_INDEX):
+    if not _is_not_negative(values[FLOORS_INDEX]):
         return False
-    if not _is_positive(WATERFRONT_INDEX ):
+    if not _is_not_negative(values[WATERFRONT_INDEX]):
         return False
     return True
 

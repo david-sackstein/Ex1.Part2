@@ -188,10 +188,12 @@ def get_percents_and_errors(data, indexes, prices):
     test_errors = []
     train_errors = []
 
-    for train_percent in range(1, 100, 1):
-        train_size = int(train_percent * data.shape[0] / 100)
+    data_row_count = data.shape[0]
 
-        train_indexes, test_indexes = get_random_selection(total_size, train_size)
+    for train_percent in range(1, 100, 1):
+        train_size = int(train_percent * data_row_count / 100)
+
+        train_indexes, test_indexes = split_data_randomly(data_row_count, train_size)
 
         train_data, train_prices = get_data_and_prices(data, prices, train_indexes)
         test_data, test_prices = get_data_and_prices(data, prices, test_indexes)
@@ -217,15 +219,25 @@ def _calculate_error_on_data(predictor, data, prices):
     return rmse
 
 
-def get_random_selection(total_size, train_size):
+def split_data_randomly(total_size, train_size):
+    # create the test_indexes has having all the indexes
+    # and the train_indexes as being empty.
+    # We will move train_size indexes from test_indexes to train_indexes
 
-    test_indexes = range(total_size)
+    test_indexes = [i for i in range(total_size)]
     train_indexes = []
 
     for i in range(train_size):
-        random_index = test_indexes[randint(0, len(test_indexes))]
-        test_indexes.remove(random_index)
-        train_indexes.append(random_index)
+        # we need to remove one of the indexes in test_indexes.
+        # but not that test_indexes may contain gaps because we have removed some of its original values.
+        # So for instance, if test_indexes now contains [0, 55, 2345, 20000]
+        # and we need to remove one more we select a position between 0 and 3 - let's say 1
+        # and then we remove 55 which is in place 1 (and move it to train_indexes
+
+        select_position_of_index_to_move = randint(0, len(test_indexes))
+        index_to_move = test_indexes[select_position_of_index_to_move]
+        test_indexes.remove(index_to_move)
+        train_indexes.append(index_to_move)
 
     return train_indexes, test_indexes
 

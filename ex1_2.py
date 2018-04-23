@@ -48,6 +48,10 @@ original_column_count = 21
 ID_INDEX = 0
 DATE_INDEX = 1
 PRICE_INDEX = 2
+BEDROOMS_INDEX = 3
+BATHROOMS_INDEX = 4
+FLOORS_INDEX = 7
+WATERFRONT_INDEX = 8
 ZIP_CODE_INDEX = 16
 YEAR_RENOVATED_INDEX = 15
 
@@ -93,6 +97,14 @@ def is_float(value):
         return False
 
 
+def _is_positive(value):
+    if not is_float(value):
+        return False
+    if float(value) <= 0:
+        return False
+    return True
+
+
 def is_valid(values):
     if len(values) != original_column_count:
         return False
@@ -100,10 +112,15 @@ def is_valid(values):
         return False
     if len(values[DATE_INDEX]) < 8:
         return False
-    price = values[PRICE_INDEX]
-    if not is_float(price):
+    if not _is_positive(PRICE_INDEX):
         return False
-    if float(price) < 1:
+    if not _is_positive(BEDROOMS_INDEX):
+        return False
+    if not _is_positive(BATHROOMS_INDEX):
+        return False
+    if not _is_positive(FLOORS_INDEX):
+        return False
+    if not _is_positive(WATERFRONT_INDEX ):
         return False
     return True
 
@@ -229,7 +246,7 @@ def split_data_randomly(total_size, train_size):
 
     for i in range(train_size):
         # we need to remove one of the indexes in test_indexes.
-        # but not that test_indexes may contain gaps because we have removed some of its original values.
+        # but note that test_indexes may contain gaps because we have removed some of its original values.
         # So for instance, if test_indexes now contains [0, 55, 2345, 20000]
         # and we need to remove one more we select a position between 0 and 3 - let's say 1
         # and then we remove 55 which is in place 1 (and move it to train_indexes

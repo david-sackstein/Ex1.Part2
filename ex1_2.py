@@ -191,9 +191,7 @@ def get_percents_and_errors(data, indexes, prices):
     for train_percent in range(1, 100, 1):
         train_size = int(train_percent * data.shape[0] / 100)
 
-        train_indexes = get_random_selection(indexes, train_size)
-        test_indexes = np.subtract(indexes, train_indexes)
-        # test_indexes = sorted(indexes - set(train_indexes))
+        train_indexes, test_indexes = get_random_selection(total_size, train_size)
 
         train_data, train_prices = get_data_and_prices(data, prices, train_indexes)
         test_data, test_prices = get_data_and_prices(data, prices, test_indexes)
@@ -219,15 +217,17 @@ def _calculate_error_on_data(predictor, data, prices):
     return rmse
 
 
-def get_random_selection(indexes, train_size):
-    # TODO make this a random selection of indexes
-    train_indexes = [0]*21610
-    for i in range(train_size):
-        train_indexes[i] = randint(1, len(indexes))
+def get_random_selection(total_size, train_size):
 
-    for j in range(train_size, 21610):
-        train_indexes[j] = 0
-    return train_indexes
+    test_indexes = range(total_size)
+    train_indexes = []
+
+    for i in range(train_size):
+        random_index = test_indexes[randint(0, len(test_indexes))]
+        test_indexes.remove(random_index)
+        train_indexes.append(random_index)
+
+    return train_indexes, test_indexes
 
 
 def get_data_and_prices(data, prices, indexes):
